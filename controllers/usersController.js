@@ -1,5 +1,5 @@
 const User = require('../models/User')
-const Notes = require('../models/Note')
+const Note = require('../models/Note')
 const asyncHandler = require('express-async-handler')
 const bcrypt = require('bcrypt')
 
@@ -8,7 +8,7 @@ const bcrypt = require('bcrypt')
 // @access Private
 const getAllUsers = asyncHandler(async (req, res) => {
     const users = await User.find().select('-password').lean()
-    if (!users) {
+    if (!users?.length) {
         return res.status(400).json({ message: 'No users found'})
     }
     res.json(users)
@@ -95,8 +95,8 @@ const deleteUser = asyncHandler(async (req, res) => {
         return res.status(400).json({message: 'User ID Required'})
     }
 
-    const notes = await Note.findOne({ user: id }).lean().exec()
-    if (notes?.length) {
+    const note = await Note.findOne({ user: id }).lean().exec()
+    if (note) {
         return res.status(400).json({message: `This user has associated notes and cannot be deleted.`})
     }
 
@@ -106,10 +106,11 @@ const deleteUser = asyncHandler(async (req, res) => {
         return res.status(400).json({message: "User Not Found"})
     }
 
-    const result = await user.deleteOne()
+    const deletedUsername = user.username; // Store the username before deleting
+    const deletedId = user._id; // Store the ID before deleting
+    await user.deleteOne()
 
-    const reply = `Username ${result.username} with ID ${result._id} deleted`
-
+    const reply = `Username ${deletedUsername} with ID ${deletedId} deleted`
     res.json(reply)
 
 })
